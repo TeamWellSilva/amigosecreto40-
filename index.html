@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amigo Secreto das Cores</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti para celebração na revelação -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          animation: {
+            'float': 'float 3.5s ease-in-out infinite',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'pop-in': 'popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            popIn: {
+              '0%': { opacity: '0', transform: 'scale(0.92) translateY(12px)' },
+              '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #faf9f6;
+      background-image:
+        radial-gradient(at 0% 0%, rgba(244, 114, 182, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(167, 139, 250, 0.08) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(251, 191, 36, 0.08) 0px, transparent 50%);
+      min-height: 100vh;
+    }
+
+    /* Estilização suave para input color nativo */
+    input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 0.75rem;
+    }
+
+    /* Padrão de envelope lacrado */
+    .envelope-pattern {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.25) 1.5px, transparent 1.5px);
+      background-size: 16px 16px;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Barra de Notificação Flutuante (Toast) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Cabeçalho Principal -->
+  <header class="w-full border-b border-slate-200/70 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+      <a href="#" onclick="resetToOrganizer(event)" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 via-amber-400 to-indigo-500 p-0.5 shadow-sm group-hover:scale-105 transition-transform">
+          <div class="w-full h-full bg-white rounded-[14px] flex items-center justify-center">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h1 class="font-display font-bold text-lg sm:text-xl text-slate-900 leading-tight">
+            Amigo Secreto das Cores
+          </h1>
+          <p class="text-xs text-slate-500 hidden sm:block">Sorteio rápido, sigiloso e com links individuais</p>
+        </div>
+      </a>
+
+      <div id="header-actions" class="flex items-center gap-2">
+        <button onclick="downloadStandaloneHTML()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200/80 transition-colors" title="Baixar esta página como arquivo HTML único">
+          <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span class="hidden sm:inline">Baixar App</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+
+    <!-- ===================================================================== -->
+    <!-- MODO 1: ORGANIZADOR                                                   -->
+    <!-- ===================================================================== -->
+    <section id="organizer-view" class="space-y-8">
+
+      <!-- Banner Introdutório -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            4 Participantes • 4 Cores Fixas • Links Exclusivos
+          </span>
+          <h2 class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight">
+            Organize seu Amigo Secreto das Cores
+          </h2>
+          <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+            Preencha os nomes dos <strong>4 participantes</strong>. Cada pessoa receberá um link secreto com uma das cores definidas: <strong>Verde, Amarelo, Branco ou Laranja</strong>!
+          </p>
+        </div>
+
+        <!-- Selo Fixo de 4 Participantes -->
+        <div class="w-full md:w-auto flex flex-row md:flex-col items-center justify-between md:justify-center bg-slate-50 border border-slate-200/80 rounded-2xl px-6 py-4 gap-1.5 shrink-0">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Participantes</span>
+          <span id="participant-count-display" class="font-display font-extrabold text-3xl text-indigo-600">4</span>
+          <span class="text-[11px] font-medium text-slate-400">Edição 4 Cores</span>
+        </div>
+      </div>
+
+      <!-- Aviso sobre hospedagem local (file://) caso o usuário abra direto do computador -->
+      <div id="local-file-warning" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 text-amber-900 text-sm">
+        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div>
+          <p class="font-semibold">Você está visualizando em ambiente local ou prévia.</p>
+          <p class="text-amber-800/90 mt-0.5">Para que seus amigos abram os links pelo celular no WhatsApp, publique este arquivo gratuitamente (ex: Netlify Drop, Vercel ou GitHub Pages) ou envie o arquivo HTML junto.</p>
+        </div>
+      </div>
+
+      <!-- Grade Principal: Participantes & Paleta de Cores -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Coluna 1: Lista de Participantes (7 colunas) -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-display font-bold text-lg text-slate-900">1. Quem vai participar?</h3>
+              <p class="text-xs text-slate-500">O WhatsApp é opcional, mas facilita o envio com 1 clique.</p>
+            </div>
+            <button onclick="fillExampleNames()" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors">
+              Preencher exemplo
+            </button>
+          </div>
+
+          <div id="participants-list" class="space-y-3">
+            <!-- Renderizado via JS -->
+          </div>
+        </div>
+
+        <!-- Coluna 2: Cores do Sorteio (5 colunas) -->
+        <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-5 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h3 class="font-display font-bold text-lg text-slate-900">2. Cores do Sorteio</h3>
+                <p class="text-xs text-slate-500">Cada participante receberá 1 destas 4 cores.</p>
+              </div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600">
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Cores Fixas
+              </span>
+            </div>
+
+            <!-- Lista de Cores Fixas -->
+            <div id="colors-list" class="space-y-2.5">
+              <!-- Renderizado via JS -->
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100">
+            <p class="text-xs text-slate-500 leading-relaxed">
+              As 4 cores já estão configuradas e serão distribuídas aleatoriamente sem repetição ao clicar em sortear.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nome do Evento & Botão Principal de Sorteio -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div class="flex-1">
+          <label for="event-title-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+            Título do Grupo / Festa (aparece no convite)
+          </label>
+          <input id="event-title-input" type="text" value="Amigo Secreto das Cores 2026" placeholder="Ex: Natal da Família Silva"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-800 transition-all" />
+        </div>
+
+        <div class="flex items-end">
+          <button onclick="runDraw()" class="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-500 hover:from-indigo-700 hover:via-purple-700 hover:to-rose-600 text-white font-display font-bold text-base shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 active:scale-[0.99] transition-all flex items-center justify-center gap-2.5 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+            Sortear Cores e Gerar Links
+          </button>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- RESULTADOS DO SORTEIO (LINKS INDIVIDUAIS SIGILOSOS)                 -->
+      <!-- =================================================================== -->
+      <div id="results-section" class="hidden animate-pop-in space-y-5">
+        <div class="bg-emerald-50/90 border border-emerald-200 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-start gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-lg text-emerald-950">Sorteio realizado com sigilo total!</h3>
+              <p class="text-sm text-emerald-800 mt-0.5">
+                As cores estão ocultas para você também poder participar. Envie o link individual para cada pessoa!
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-end sm:self-center">
+            <button onclick="copyAllLinksSummary()" class="px-4 py-2 rounded-xl bg-white border border-emerald-200 text-emerald-900 hover:bg-emerald-100/60 text-xs font-semibold transition-colors shadow-2xs">
+              Copiar Lista de Links
+            </button>
+          </div>
+        </div>
+
+        <!-- Cards de Links por Participante -->
+        <div id="links-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- MODO 2: PARTICIPANTE (TELA DE REVELAÇÃO DO LINK INDIVIDUAL)           -->
+    <!-- ===================================================================== -->
+    <section id="participant-view" class="hidden max-w-xl mx-auto py-4 sm:py-8">
+
+      <!-- Banner de Modo Pré-visualização (quando testado pelo organizador) -->
+      <div id="preview-mode-banner" class="hidden mb-5 bg-amber-100/90 border border-amber-300 text-amber-950 px-4 py-3 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="flex items-center gap-2">
+          <span class="font-bold uppercase tracking-wider bg-amber-300/80 px-2 py-0.5 rounded-md text-[11px]">Prévia</span>
+          <span>Você está testando o link. Não clique em revelar se quiser manter seu sigilo!</span>
+        </div>
+        <button onclick="closePreviewMode()" class="font-bold underline hover:text-amber-700 shrink-0">
+          Voltar ao Sorteio
+        </button>
+      </div>
+
+      <!-- ETAPA A: ENVELOPE LACRADO / CAIXA SURPRESA -->
+      <div id="sealed-card" class="bg-white rounded-[2rem] border border-slate-200/90 shadow-xl shadow-slate-200/50 overflow-hidden animate-pop-in">
+        <!-- Topo Decorativo -->
+        <div class="h-36 bg-gradient-to-br from-indigo-600 via-purple-600 to-rose-500 envelope-pattern relative flex items-center justify-center">
+          <div class="w-20 h-20 rounded-3xl bg-white/95 backdrop-blur-md shadow-lg flex items-center justify-center animate-float">
+            <svg class="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="p-6 sm:p-10 text-center space-y-6">
+          <div class="space-y-2">
+            <p id="reveal-event-title" class="text-xs font-bold uppercase tracking-widest text-indigo-600">
+              Amigo Secreto das Cores
+            </p>
+            <h2 class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900">
+              Olá, <span id="reveal-participant-name" class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-rose-500">Participante</span>!
+            </h2>
+            <p class="text-slate-600 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+              O seu sorteio exclusivo já foi realizado! Certifique-se de que ninguém está olhando para a sua tela antes de abrir.
+            </p>
+          </div>
+
+          <div class="pt-2">
+            <button onclick="revealSecretColor()" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-display font-bold text-base sm:text-lg shadow-xl shadow-slate-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all inline-flex items-center justify-center gap-3 cursor-pointer">
+              <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              Revelar Minha Cor
+            </button>
+          </div>
+
+          <p class="text-xs text-slate-400">
+            Dica: tire um print da tela depois de revelar para não esquecer!
+          </p>
+        </div>
+      </div>
+
+      <!-- ETAPA B: COR REVELADA -->
+      <div id="revealed-card" class="hidden bg-white rounded-[2rem] border border-slate-200/90 shadow-2xl overflow-hidden animate-pop-in">
+        <!-- Amostra Visual Grande da Cor -->
+        <div id="revealed-color-banner" class="p-8 sm:p-10 text-center relative transition-colors duration-500 border-b border-slate-200/80">
+          <span id="revealed-badge" class="inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/10 mb-4">
+            Sua Cor Secreta é
+          </span>
+          <h2 id="revealed-color-name" class="font-display font-extrabold text-3xl sm:text-5xl tracking-tight mb-3">
+            Verde
+          </h2>
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-black/10 backdrop-blur-xs text-xs font-mono font-semibold">
+            <span id="revealed-color-hex">#22C55E</span>
+          </div>
+        </div>
+
+        <!-- Corpo com Instruções e Ideias de Presentes -->
+        <div class="p-6 sm:p-8 space-y-6">
+          <div class="text-center space-y-1">
+            <p class="text-sm text-slate-500">
+              Participante: <strong id="revealed-user-label" class="text-slate-800">Nome</strong>
+            </p>
+            <p class="text-sm text-slate-600">
+              Escolha um presente criativo onde a cor <strong id="revealed-color-inline" class="text-slate-900">Azul Royal</strong> seja o destaque!
+            </p>
+          </div>
+
+          <!-- Ideias de Presentes na Cor -->
+          <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+            <h4 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Ideias de presentes nesta cor:
+            </h4>
+            <ul id="gift-ideas-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-600">
+              <!-- Preenchido via JS -->
+            </ul>
+          </div>
+
+          <!-- Ações Inferiores -->
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button onclick="hideColorAgain()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition-colors">
+              Ocultar Cor Novamente
+            </button>
+            <button onclick="resetToOrganizer(event)" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs sm:text-sm font-semibold transition-colors">
+              Criar um Novo Sorteio
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-center text-xs text-slate-400">
+    <p>Amigo Secreto das Cores • Todos os sorteios são processados localmente no seu navegador com total privacidade.</p>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- LÓGICA JAVASCRIPT                                                     -->
+  <!-- ===================================================================== -->
+  <script>
+    // As 4 cores fixas definidas pelo usuário com sugestões de presentes específicas
+    const FIXED_COLORS = [
+      {
+        name: "Verde",
+        hex: "#22C55E",
+        ideas: [
+          "Vaso com plantinha suculenta ou cacto",
+          "Garrafa térmica, copo ou squeeze verde",
+          "Vela aromática de capim-limão ou alecrim",
+          "Chocolates/balas de menta ou pistache"
+        ]
+      },
+      {
+        name: "Amarelo",
+        hex: "#EAB308",
+        ideas: [
+          "Chocolates ou snacks em embalagem amarela",
+          "Caneca vibrante ou copo térmico amarelo",
+          "Kit papelaria (caderno, post-its e canetas)",
+          "Acessório de verão, meias divertidas ou boné"
+        ]
+      },
+      {
+        name: "Branco",
+        hex: "#FFFFFF",
+        ideas: [
+          "Barra ou caixa de chocolate branco",
+          "Vela aromática de baunilha ou coco",
+          "Caneca minimalista de porcelana branca",
+          "Toalha de rosto macia ou necessaire branca"
+        ]
+      },
+      {
+        name: "Laranja",
+        hex: "#F97316",
+        ideas: [
+          "Snacks crocantes ou doces em embalagem laranja",
+          "Caneca artesanal ou copo térmico laranja",
+          "Vaso decorativo ou vela cítrica de laranja",
+          "Livro, agenda ou acessório criativo laranja"
+        ]
+      }
+    ];
+
+    // Estado da aplicação fixo para 4 participantes e as 4 cores definidas
+    let state = {
+      participants: [
+        { name: "", phone: "" },
+        { name: "", phone: "" },
+        { name: "", phone: "" },
+        { name: "", phone: "" }
+      ],
+      colors: FIXED_COLORS.map(c => ({ name: c.name, hex: c.hex })),
+      drawResults: [], // [{ participantName, phone, colorName, colorHex, link }]
+      activeRevealData: null,
+      isPreview: false
+    };
+
+    // =========================================================================
+    // ENCODING / DECODING UTF-8 SEGURO PARA BASE64 URL (SUPORTA ACENTOS PT-BR)
+    // =========================================================================
+    function encodePayloadToBase64(obj) {
+      const jsonStr = JSON.stringify(obj);
+      const bytes = new TextEncoder().encode(jsonStr);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+
+    function decodeBase64ToPayload(base64Url) {
+      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) {
+        base64 += '=';
+      }
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const jsonStr = new TextDecoder().decode(bytes);
+      return JSON.parse(jsonStr);
+    }
+
+    // =========================================================================
+    // UTILITÁRIOS DE UI E CONTRASTE
+    // =========================================================================
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getContrastTextColor(hexColor) {
+      const hex = hexColor.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.62 ? '#0F172A' : '#FFFFFF';
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      const colors = {
+        success: 'bg-slate-900 text-white border-slate-700',
+        error: 'bg-rose-600 text-white border-rose-500',
+        warning: 'bg-amber-500 text-slate-950 border-amber-400'
+      };
+
+      toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-lg border text-xs sm:text-sm font-medium flex items-center gap-2.5 animate-pop-in ${colors[type] || colors.success}`;
+      toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 260);
+      }, 3200);
+    }
+
+    function copyTextToClipboard(text, successMsg = 'Link copiado!') {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg);
+      } catch (err) {
+        showToast('Não foi possível copiar automaticamente.', 'error');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // =========================================================================
+    // RENDERIZAÇÃO DA INTERFACE DO ORGANIZADOR
+    // =========================================================================
+    function renderOrganizerUI() {
+      document.getElementById('participant-count-display').textContent = state.participants.length;
+      renderParticipantsList();
+      renderColorsList();
+    }
+
+    function renderParticipantsList() {
+      const container = document.getElementById('participants-list');
+      container.innerHTML = '';
+
+      state.participants.forEach((p, index) => {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-2xl bg-slate-50/90 border border-slate-200/80 items-center';
+
+        row.innerHTML = `
+          <div class="sm:col-span-7 flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-700 font-display font-bold text-xs flex items-center justify-center shrink-0">
+              ${index + 1}
+            </span>
+            <input
+              type="text"
+              value="${escapeHtml(p.name)}"
+              placeholder="Nome do participante ${index + 1}"
+              oninput="updateParticipant(${index}, 'name', this.value)"
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-800 transition-all"
+            />
+          </div>
+          <div class="sm:col-span-5">
+            <input
+              type="tel"
+              value="${escapeHtml(p.phone)}"
+              placeholder="WhatsApp (opcional)"
+              oninput="updateParticipant(${index}, 'phone', this.value)"
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm text-slate-700 transition-all"
+            />
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function renderColorsList() {
+      const container = document.getElementById('colors-list');
+      container.innerHTML = '';
+
+      state.colors.forEach((c) => {
+        const isWhite = c.hex.toUpperCase() === '#FFFFFF';
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50/90 border border-slate-200/80';
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <span
+              class="w-9 h-9 rounded-xl shrink-0 shadow-2xs ${isWhite ? 'border-2 border-slate-300' : 'border border-black/10'}"
+              style="background-color: ${c.hex}"
+            ></span>
+            <div class="min-w-0">
+              <span class="block text-sm font-bold text-slate-800 truncate">${escapeHtml(c.name)}</span>
+              <span class="block text-[11px] font-mono text-slate-400 uppercase">${c.hex}</span>
+            </div>
+          </div>
+          <span class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-white border border-slate-200/80 text-slate-500">
+            Confirmada
+          </span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // =========================================================================
+    // MANIPULAÇÃO DE PARTICIPANTES
+    // =========================================================================
+    function updateParticipant(index, field, value) {
+      state.participants[index][field] = value;
+    }
+
+    function fillExampleNames() {
+      const samplePeople = [
+        { name: "Mariana", phone: "" },
+        { name: "Lucas", phone: "" },
+        { name: "Camila", phone: "" },
+        { name: "Rafael", phone: "" }
+      ];
+      state.participants = state.participants.map((p, i) => ({
+        name: samplePeople[i].name,
+        phone: p.phone
+      }));
+      renderParticipantsList();
+      showToast("Nomes de exemplo preenchidos!");
+    }
+
+    // =========================================================================
+    // ALGORITMO DE SORTEIO E GERAÇÃO DOS LINKS INDIVIDUAIS
+    // =========================================================================
+    function runDraw() {
+      const count = state.participants.length;
+      const eventTitle = document.getElementById('event-title-input').value.trim() || "Amigo Secreto das Cores";
+
+      // Validação de nomes
+      const cleanedParticipants = state.participants.map((p, idx) => ({
+        name: p.name.trim(),
+        phone: p.phone.trim(),
+        index: idx
+      }));
+
+      if (cleanedParticipants.some(p => !p.name)) {
+        showToast("Por favor, preencha o nome dos 4 participantes antes de sortear.", "error");
+        return;
+      }
+
+      // Verifica nomes duplicados
+      const uniqueNames = new Set(cleanedParticipants.map(p => p.name.toLowerCase()));
+      if (uniqueNames.size !== count) {
+        showToast("Existem nomes repetidos. Adicione um sobrenome ou apelido para diferenciar!", "warning");
+        return;
+      }
+
+      // Embaralhamento Fisher-Yates das 4 cores fixas (garante 1 cor exclusiva por participante)
+      const shuffledColors = [...state.colors];
+      for (let i = shuffledColors.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledColors[i], shuffledColors[j]] = [shuffledColors[j], shuffledColors[i]];
+      }
+
+      // Monta URL base limpa (sem hash ou query antigos)
+      const baseUrl = window.location.href.split('#')[0].split('?')[0];
+
+      state.drawResults = cleanedParticipants.map((participant, idx) => {
+        const assignedColor = shuffledColors[idx];
+        const payload = {
+          n: participant.name,
+          c: assignedColor.name,
+          h: assignedColor.hex,
+          t: eventTitle
+        };
+        const token = encodePayloadToBase64(payload);
+        const personalLink = `${baseUrl}#reveal=${token}`;
+
+        return {
+          participantName: participant.name,
+          phone: participant.phone,
+          colorName: assignedColor.name,
+          colorHex: assignedColor.hex,
+          eventTitle,
+          payload,
+          link: personalLink
+        };
+      });
+
+      renderDrawResults();
+
+      const resultsEl = document.getElementById('results-section');
+      resultsEl.classList.remove('hidden');
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast("Sorteio das 4 cores concluído! Envie os links abaixo.");
+    }
+
+    function renderDrawResults() {
+      const grid = document.getElementById('links-cards-grid');
+      grid.innerHTML = '';
+
+      state.drawResults.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between gap-4';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-display font-bold text-sm flex items-center justify-center shrink-0">
+                ${escapeHtml(item.participantName.charAt(0).toUpperCase())}
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-display font-bold text-base text-slate-900 truncate">${escapeHtml(item.participantName)}</h4>
+                <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Cor secreta sorteada e oculta
+                </p>
+              </div>
+            </div>
+            <button onclick="openPreviewForParticipant(${idx})" class="text-xs font-semibold text-slate-500 hover:text-indigo-600 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors shrink-0" title="Abrir tela de revelação lacrada">
+              Testar Link
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2">
+            <input type="text" readonly value="${escapeHtml(item.link)}" class="w-full bg-transparent text-xs font-mono text-slate-500 outline-none truncate" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="copyParticipantLink(${idx})" class="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+              <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Copiar Link
+            </button>
+            <button onclick="shareOnWhatsApp(${idx})" class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/>
+              </svg>
+              WhatsApp
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function copyParticipantLink(index) {
+      const item = state.drawResults[index];
+      if (!item) return;
+      copyTextToClipboard(item.link, `Link de ${item.participantName} copiado!`);
+    }
+
+    function copyAllLinksSummary() {
+      if (!state.drawResults.length) return;
+      const lines = state.drawResults.map(
+        item => `🎨 *${item.participantName}*: ${item.link}`
+      );
+      const summary = `Links do ${state.drawResults[0].eventTitle}:\n\n${lines.join('\n')}`;
+      copyTextToClipboard(summary, 'Lista completa de links copiada!');
+    }
+
+    function shareOnWhatsApp(index) {
+      const item = state.drawResults[index];
+      if (!item) return;
+
+      const text = `Olá, *${item.participantName}*! 🎨🎁\n\nSaiu o sorteio do *${item.eventTitle}*!\nClique no seu link exclusivo abaixo para descobrir qual cor você tirou (não mostre para ninguém!):\n\n${item.link}`;
+      const encodedText = encodeURIComponent(text);
+
+      let cleanPhone = item.phone.replace(/\D/g, '');
+      if (cleanPhone && cleanPhone.length <= 11 && !cleanPhone.startsWith('55')) {
+        cleanPhone = '55' + cleanPhone;
+      }
+
+      const waUrl = cleanPhone
+        ? `https://wa.me/${cleanPhone}?text=${encodedText}`
+        : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    // =========================================================================
+    // TELA DE REVELAÇÃO DO PARTICIPANTE & PRÉ-VISUALIZAÇÃO
+    // =========================================================================
+    function openPreviewForParticipant(index) {
+      const item = state.drawResults[index];
+      if (!item) return;
+      state.isPreview = true;
+      showParticipantRevealView(item.payload, true);
+    }
+
+    function closePreviewMode() {
+      state.isPreview = false;
+      state.activeRevealData = null;
+      document.getElementById('participant-view').classList.add('hidden');
+      document.getElementById('organizer-view').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showParticipantRevealView(payload, isPreview = false) {
+      state.activeRevealData = payload;
+      state.isPreview = isPreview;
+
+      document.getElementById('organizer-view').classList.add('hidden');
+      document.getElementById('participant-view').classList.remove('hidden');
+
+      const previewBanner = document.getElementById('preview-mode-banner');
+      if (isPreview) {
+        previewBanner.classList.remove('hidden');
+      } else {
+        previewBanner.classList.add('hidden');
+      }
+
+      document.getElementById('reveal-event-title').textContent = payload.t || 'Amigo Secreto das Cores';
+      document.getElementById('reveal-participant-name').textContent = payload.n || 'Participante';
+
+      // Garante que comece no envelope lacrado
+      document.getElementById('sealed-card').classList.remove('hidden');
+      document.getElementById('revealed-card').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function revealSecretColor() {
+      const data = state.activeRevealData;
+      if (!data) return;
+
+      const textColor = getContrastTextColor(data.h);
+      const isWhite = data.h.toUpperCase() === '#FFFFFF';
+
+      // Configura banner da cor revelada (com contraste e borda sutil para o Branco)
+      const banner = document.getElementById('revealed-color-banner');
+      banner.style.backgroundColor = data.h;
+      banner.style.color = textColor;
+
+      const badge = document.getElementById('revealed-badge');
+      badge.className = isWhite
+        ? 'inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 mb-4'
+        : 'inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-white/25 mb-4';
+
+      document.getElementById('revealed-color-name').textContent = data.c;
+      document.getElementById('revealed-color-hex').textContent = data.h.toUpperCase();
+      document.getElementById('revealed-user-label').textContent = data.n;
+      document.getElementById('revealed-color-inline').textContent = data.c;
+
+      // Busca ideias de presentes correspondentes às 4 cores fixas
+      const matchedCatalog = FIXED_COLORS.find(
+        item => item.name.toLowerCase() === data.c.toLowerCase()
+      );
+      const ideas = matchedCatalog
+        ? matchedCatalog.ideas
+        : [
+            `Caneca, garrafa ou copo na cor ${data.c}`,
+            `Doces, chocolates ou snacks na embalagem ${data.c}`,
+            `Item de decoração, vela ou almofada (${data.c})`,
+            `Acessório pessoal, meias ou necessaire (${data.c})`
+          ];
+
+      const ideasList = document.getElementById('gift-ideas-list');
+      ideasList.innerHTML = ideas.map(idea => `
+        <li class="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-slate-200/60">
+          <span class="w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${isWhite ? 'border border-slate-400' : 'border border-black/10'}" style="background-color: ${data.h}"></span>
+          <span>${escapeHtml(idea)}</span>
+        </li>
+      `).join('');
+
+      // Alterna visualização
+      document.getElementById('sealed-card').classList.add('hidden');
+      document.getElementById('revealed-card').classList.remove('hidden');
+
+      // Dispara confetes na cor sorteada (com borda/destaque extra caso seja Branco)
+      if (typeof confetti === 'function') {
+        const confettiColors = isWhite
+          ? ['#FFFFFF', '#E2E8F0', '#FBBF24', '#94A3B8']
+          : [data.h, '#FBBF24', '#FFFFFF', '#A855F7'];
+
+        confetti({
+          particleCount: 85,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: confettiColors
+        });
+      }
+    }
+
+    function hideColorAgain() {
+      document.getElementById('revealed-card').classList.add('hidden');
+      document.getElementById('sealed-card').classList.remove('hidden');
+    }
+
+    function resetToOrganizer(event) {
+      if (event) event.preventDefault();
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+      state.isPreview = false;
+      state.activeRevealData = null;
+      document.getElementById('participant-view').classList.add('hidden');
+      document.getElementById('organizer-view').classList.remove('hidden');
+      renderOrganizerUI();
+    }
+
+    function downloadStandaloneHTML() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'amigo-secreto-cores.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Download do arquivo HTML iniciado!');
+    }
+
+    // =========================================================================
+    // INICIALIZAÇÃO DA PÁGINA (DETECTA LINK DE REVELAÇÃO NO HASH)
+    // =========================================================================
+    function initApp() {
+      // Exibe aviso se estiver rodando via file:// ou sandbox sem domínio público
+      if (window.location.protocol === 'file:' || window.location.protocol === 'about:') {
+        document.getElementById('local-file-warning').classList.remove('hidden');
+      }
+
+      const hash = window.location.hash || '';
+      if (hash.startsWith('#reveal=')) {
+        const token = hash.replace('#reveal=', '').trim();
+        try {
+          const payload = decodeBase64ToPayload(token);
+          if (payload && payload.n && payload.c && payload.h) {
+            showParticipantRevealView(payload, false);
+            return;
+          }
+        } catch (err) {
+          console.error('Erro ao decodificar link de revelação:', err);
+          showToast('Link de sorteio inválido ou corrompido.', 'error');
+        }
+      }
+
+      renderOrganizerUI();
+    }
+
+    window.addEventListener('hashchange', initApp);
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
